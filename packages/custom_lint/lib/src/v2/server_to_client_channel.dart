@@ -82,9 +82,8 @@ class SocketCustomLintServerToClientChannel {
 
   AnalysisSetContextRootsParams _contextRoots;
 
-  late final Stream<CustomLintMessage> _messages = _channel.messages
-      .map((e) => e! as Map<String, Object?>)
-      .map(CustomLintMessage.fromJson);
+  late final Stream<CustomLintMessage> _messages =
+      _channel.messages.map((e) => e! as Map<String, Object?>).map(CustomLintMessage.fromJson);
 
   late final Stream<CustomLintResponse> _responses = _messages
       .where((msg) => msg is CustomLintMessageResponse)
@@ -115,9 +114,7 @@ class SocketCustomLintServerToClientChannel {
     final out = process.stdout.map(utf8.decode);
 
     out.listen((event) => _server.handlePrint(event, isClientMessage: true));
-    process.stderr
-        .map(utf8.decode)
-        .listen((e) => _server.handleUncaughtError(e, StackTrace.empty));
+    process.stderr.map(utf8.decode).listen((e) => _server.handleUncaughtError(e, StackTrace.empty));
 
     // Checking process failure _after_ piping stdout/stderr to the log files.
     // This is so that if client failed to boot, logs in it should still be available
@@ -144,8 +141,7 @@ class SocketCustomLintServerToClientChannel {
   Future<Process?> _startProcess({
     required bool debug,
   }) async {
-    final tempDir = _tempDirectory =
-        Directory.systemTemp.createTempSync('custom_lint_client');
+    final tempDir = _tempDirectory = Directory.systemTemp.createTempSync('custom_lint_client');
 
     try {
       await _workspace.resolvePluginHost(tempDir);
@@ -153,7 +149,7 @@ class SocketCustomLintServerToClientChannel {
 
       return _asyncRetry(retryCount: 5, () async {
         final process = await Process.start(
-          Platform.resolvedExecutable,
+          Platform.resolvedExecutable.replaceFirst('/dartaotruntime', '/dart'),
           [
             if (_server.watchMode ?? debug) '--enable-vm-service=0',
             join('lib', 'custom_lint_client.dart'),
@@ -175,13 +171,9 @@ class SocketCustomLintServerToClientChannel {
     Iterable<String> pluginNames,
     Directory tempDirectory,
   ) {
-    final imports = pluginNames
-        .map((name) => "import 'package:$name/$name.dart' as $name;\n")
-        .join();
+    final imports = pluginNames.map((name) => "import 'package:$name/$name.dart' as $name;\n").join();
 
-    final plugins = pluginNames
-        .map((pluginName) => "'$pluginName': $pluginName.createPlugin,\n")
-        .join();
+    final plugins = pluginNames.map((pluginName) => "'$pluginName': $pluginName.createPlugin,\n").join();
 
     final mainFile = File(
       join(tempDirectory.path, 'lib', 'custom_lint_client.dart'),
